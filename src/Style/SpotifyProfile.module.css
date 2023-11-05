@@ -1,0 +1,24 @@
+.profile_container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    max-width: fit-content;
+    border-radius: 20px; /* Adjust the value for pill shape */
+    background: #1DB954; /* Spotify Green color */
+    color: white;
+    box-shadow: 4px 4px 4px black;
+    position: fixed;
+    top: 5vh;
+    left: 20vh;
+    height:40px;
+}
+
+.profile_image {
+    border-radius: 50%;
+    width: 40px; /* Adjust width as needed */
+    height: 40px; /* Adjust height as needed */
+}
+
+.profile_name {
+    padding: 0 10px;
+}

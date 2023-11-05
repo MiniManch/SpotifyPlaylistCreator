@@ -2,73 +2,69 @@ import React, { useState, useEffect } from 'react';
 import css from '../Style/SpotifyAuth.module.css';
 
 const SpotifyAuthComponent = () => {
-  const [userToken, setUserToken] = useState(null);
-  const [authorizationCode, setAuthorizationCode] = useState(null);
-
-  const clientId = process.env.REACT_APP_SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.REACT_APP_SPOTIFY_CLIENT_SECRET;
-  const redirectUri = process.env.REACT_APP_HOME_URL;
-  
-  useEffect(() => {
-    const handleCodeExchange = async () => {
-      if (authorizationCode) {
-        try {
-          const response = await fetch('https://accounts.spotify.com/api/token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-              grant_type: 'authorization_code',
-              code: authorizationCode,
-              redirect_uri: redirectUri,
-              client_id: clientId,
-              client_secret: clientSecret,
-            }),
-          });
-
-          const data = await response.json();
-          const accessToken = data.access_token;
-
-          // Use the accessToken to make requests to the Spotify API
-          const userResponse = await fetch('https://api.spotify.com/v1/me', {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          });
-          const userData = await userResponse.json();
-          console.log('User Data:', userData);
-
-          // Set the token in state or perform other actions with userData
-          setUserToken(accessToken);
-        } catch (error) {
-          console.error('Error exchanging code for token:', error);
-        }
-      }
-    };
-
-    handleCodeExchange();
-  }, [authorizationCode, clientId, clientSecret, redirectUri]);
-
-  const handleSpotifyAuth = () => {
-    const authorizationURL = `https://accounts.spotify.com/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`;
-    window.location.href = authorizationURL;
-  };
+  const [userAuthCode, setUserAuthCode] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
 
   useEffect(() => {
-    // On component mount, check for the code in the URL
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
 
-    // Set the authorization code in state
     if (code) {
-      setAuthorizationCode(code);
+      setUserAuthCode(code);
+      localStorage.setItem('user_auth_code', code);
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
+  const handleSpotifyAuth = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/auth/get-access`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        window.location.href = data.authURL; // Redirect the user to Spotify authorization page
+      } else {
+        console.error('Failed to get Spotify authorization URL');
+      }
+    } catch (error) {
+      console.error('Error during Spotify authentication:', error);
+    }
+  };
+
+  // Check for userAuthCode and initiate the request to obtain the access token
+  useEffect(() => {
+    if (userAuthCode) {
+      const fetchAccessToken = async () => {
+        try {
+          const response = await fetch(`${process.env.REACT_APP_BACKEND_SERVER_URL}/auth/spotify-callback?code=${userAuthCode}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            setAccessToken(data.token); // Set the accessToken state
+            localStorage.setItem('access_token', data.token); // Save accessToken to localStorage
+          } else {
+            console.error('Failed to get access token from Spotify');
+          }
+        } catch (error) {
+          console.error('Error during access token request:', error);
+        }
+      };
+
+      fetchAccessToken();
+    }
+  }, [userAuthCode,userAuthCode]);
+
   return (
     <div>
-      <button className={css.spotify_button} onClick={handleSpotifyAuth}>Authorize with Spotify</button>
+      <button className={css.spotify_button} onClick={handleSpotifyAuth}>
+        Authorize with Spotify
+      </button>
     </div>
   );
 };

@@ -1,10 +1,10 @@
 import './Style/App.css';
-import SpotifyAuth from './Components/SpotifyAuth';
+import SpotifyApp from './Components/SpotifyApp';
 
 function App() {
   return (
     <div className="App">
-      <SpotifyAuth/>
+      <SpotifyApp/>
     </div>
   );
 }
